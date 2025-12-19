@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
@@ -16,8 +15,43 @@ from .schemas import Token, UserCreate, User as UserSchema
 router = APIRouter(tags=["Authentication"])
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = authenticate_user(db, form_data.username, form_data.password)
+async def login_for_access_token(request: Request, db: Session = Depends(get_db)):
+    # Accept both form-encoded and JSON bodies to be robust against client misconfiguration
+    username = None
+    password = None
+
+    # Try to read form data first
+    try:
+        form = await request.form()
+        username = form.get("username")
+        password = form.get("password")
+    except Exception:
+        pass
+
+    # Fallback to JSON body
+    if not username or not password:
+        try:
+            data = await request.json()
+            username = data.get("username")
+            password = data.get("password")
+        except Exception:
+            pass
+
+    if not username or not password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="username and password are required",
+        )
+
+    # Bcrypt only accepts passwords up to 72 bytes. If the frontend sends a malformed body
+    # (e.g., full multipart payload as the password), we reject early with a clear message
+    if len((password or "").encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password length exceeds 72 bytes; check request encoding.",
+        )
+
+    user = authenticate_user(db, username, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
