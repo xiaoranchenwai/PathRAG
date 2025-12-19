@@ -6,9 +6,6 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 // Create axios instance with base URL
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Add request interceptor to add auth token to requests
@@ -43,10 +40,14 @@ api.interceptors.response.use(
 // Auth API
 export const authAPI = {
   login: (username, password) => {
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-    return api.post('/token', formData, {
+    const params = new URLSearchParams();
+    params.append('grant_type', 'password');
+    params.append('scope', '');
+    params.append('client_id', '');
+    params.append('client_secret', '');
+    params.append('username', username);
+    params.append('password', password);
+    return api.post('/token', params.toString(), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },

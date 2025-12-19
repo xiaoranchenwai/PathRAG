@@ -67,7 +67,20 @@ export const AuthProvider = ({ children }) => {
 
       return true;
     } catch (error) {
-      setError(error.response?.data?.detail || 'Login failed. Please try again.');
+      const detail = error.response?.data?.detail;
+      let message = 'Login failed. Please try again.';
+
+      if (typeof detail === 'string') {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        message = detail
+          .map((item) => item?.msg || JSON.stringify(item))
+          .join('; ');
+      } else if (detail && typeof detail === 'object') {
+        message = detail.msg || detail.detail || JSON.stringify(detail);
+      }
+
+      setError(message);
       setIsLoading(false);
       return false;
     }
