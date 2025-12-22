@@ -35,6 +35,12 @@ python -m kg_pipeline graph --working-dir ./data
 python -m kg_pipeline graph --working-dir ./data --entity "EntityName"
 ```
 
+### RAG 问答（本地文件）
+
+```bash
+python -m kg_pipeline ask "你的问题" --working-dir ./data --mode hybrid
+```
+
 ### 导入知识图谱到 Neo4j
 
 ```bash

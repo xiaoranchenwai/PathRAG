@@ -1,6 +1,6 @@
 import os
 
-from PathRAG import PathRAG
+from PathRAG import PathRAG, QueryParam
 from PathRAG.llm import openai_complete
 
 
@@ -42,3 +42,7 @@ def get_graph_snapshot(rag: PathRAG):
         )
 
     return nodes, edges
+
+
+async def query_rag(rag: PathRAG, question: str, mode: str = "hybrid") -> str:
+    return await rag.aquery(question, param=QueryParam(mode=mode))

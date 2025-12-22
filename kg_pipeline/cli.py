@@ -5,7 +5,12 @@ import os
 
 from kg_pipeline.document_parser import extract_text_from_path
 from kg_pipeline.neo4j_import import Neo4jConfig, import_graphml_directory
-from kg_pipeline.rag_pipeline import build_rag_instance, get_graph_snapshot, reload_rag_instance
+from kg_pipeline.rag_pipeline import (
+    build_rag_instance,
+    get_graph_snapshot,
+    query_rag,
+    reload_rag_instance,
+)
 
 
 def build_parser():
@@ -26,6 +31,15 @@ def build_parser():
 
     graph_cmd = subparsers.add_parser("graph", help="Dump knowledge graph as JSON")
     graph_cmd.add_argument("--entity", help="Filter by entity id")
+
+    ask_cmd = subparsers.add_parser("ask", help="Run a RAG question against local data")
+    ask_cmd.add_argument("question", help="Question to ask")
+    ask_cmd.add_argument(
+        "--mode",
+        default="hybrid",
+        choices=["hybrid", "global"],
+        help="Query mode",
+    )
 
     neo4j_cmd = subparsers.add_parser("neo4j-import", help="Import GraphML into Neo4j")
     neo4j_cmd.add_argument("--uri", required=True, help="Neo4j bolt URI")
@@ -71,6 +85,12 @@ def main():
         rag = build_rag_instance(args.working_dir)
         payload = handle_graph(rag, args.entity)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "ask":
+        rag = build_rag_instance(args.working_dir)
+        answer = asyncio.run(query_rag(rag, args.question, mode=args.mode))
+        print(answer)
         return
 
     if args.command == "neo4j-import":
